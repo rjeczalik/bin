@@ -1,4 +1,23 @@
 // cmd/gobin TODO(rjeczalik): document
+//
+// Usage
+//
+//   NAME:
+//       gobin - searches for Go executables in $PATH/$GOBIN/$GOPATH
+//               and lists or updates them.
+//
+//   USAGE:
+//       gobin [-u] [-v] [path|package...]
+//
+//   FLAGS:
+//       -v  Turns on verbose output
+//       -u  Updates Go binaries
+//
+//   EXAMPLES:
+//       gobin                    Lists all Go binaries (looks up $PATH/$GOBIN/$GOPATH)
+//       gobin -v -u              Updates all Go binaries
+//       gobin -u github.com      Updates all Go binaries installed from github.com
+//       gobin ~/bin              Lists all Go binaries from the ~/bin directory
 package main
 
 import (
