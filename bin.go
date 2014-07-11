@@ -307,6 +307,17 @@ func copyfile(dst, src string) error {
 	return err
 }
 
+func importpkg(path string) (string, error) {
+	ex, err := which.NewExec(path)
+	if err != nil {
+		return "", err
+	}
+	if ex.Type.GOOS != runtime.GOOS || ex.Type.GOARCH != runtime.GOARCH {
+		return "", errors.New("bin: cross-compiling is not supported yet")
+	}
+	return ex.Import()
+}
+
 func searchSymlink(args []string, symlink bool) (b []Bin, s map[string][]Bin, err error) {
 	type skv struct {
 		k string
@@ -341,11 +352,12 @@ func searchSymlink(args []string, symlink bool) (b []Bin, s map[string][]Bin, er
 			}
 		}()
 	}
+	// TODO(rjeczalik): cap(ch) = max(count files in dirs)
 	ch, wg := make(chan binpath, 128), sync.WaitGroup{}
 	for i := 0; i < parallel; i++ {
 		go func() {
 			for p := range ch {
-				pkg, err := which.Look(p.path)
+				pkg, err := importpkg(p.path)
 				if err != nil {
 					wg.Done()
 					continue
