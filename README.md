@@ -9,9 +9,10 @@ Searches for Go executables in $PATH / $GOBIN / $GOPATH and updates them.
 
 ```
 ~ $ go get -u github.com/rjeczalik/bin/cmd/gobin
-~ $ go install github.com/rjeczalik/bin/cmd/gobin
 ```
 
 *Documentation*
 
 [godoc.org/github.com/rjeczalik/bin/cmd/gobin](http://godoc.org/github.com/rjeczalik/bin/cmd/gobin)
+
+**NOTE** Go version 1.3 required.
