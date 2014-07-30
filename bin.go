@@ -57,9 +57,12 @@ func appenduniq(a *[]string) func(...string) {
 }
 
 func splitandmap(env string, fn func(string) string) (s []string) {
+	var err error
 	for _, dir := range strings.Split(os.Getenv(env), string(os.PathListSeparator)) {
 		if dir = fn(dir); dir != "" {
-			s = append(s, dir)
+			if dir, err = filepath.Abs(dir); err == nil {
+				s = append(s, dir)
+			}
 		}
 	}
 	return
