@@ -27,6 +27,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/rjeczalik/bin"
 )
@@ -86,6 +87,15 @@ func self() string {
 	return ""
 }
 
+func log(b *bin.Bin, d time.Duration, err error) {
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "fail\t%s\t(%s)\n", b.Path, b.Package)
+		fmt.Fprintf(os.Stderr, "\terror: %v\n", err)
+	} else {
+		fmt.Printf("ok\t%s\t(%s)\t%.3fs\n", b.Path, b.Package, d.Seconds())
+	}
+}
+
 // TODO(rjeczalik): Bin.CanWrite needs a Flock here
 func main() {
 	if len(os.Args) == 2 && ishelp(os.Args[1]) {
@@ -94,12 +104,11 @@ func main() {
 	}
 	var (
 		b []bin.Bin
-		s map[string][]bin.Bin
 		e error
 		a = parse()
 	)
 	if verbose {
-		b, s, e = bin.SearchSymlink(a)
+		b, _, e = bin.SearchSymlink(a)
 	} else {
 		b, e = bin.Search(a)
 	}
@@ -115,11 +124,10 @@ func main() {
 				}
 			}
 		}
-		bin.Update(b)
+		bin.Update(b, log)
 	} else {
 		for i := range b {
 			fmt.Printf("%s\t(%s)\n", b[i].Path, b[i].Package)
 		}
 	}
-	_ = s
 }

@@ -15,6 +15,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/rjeczalik/which"
 )
@@ -193,8 +194,7 @@ func SearchSymlink(args []string) ([]Bin, map[string][]Bin, error) {
 }
 
 // Update TODO(rjeczalik): document
-// TODO(rjeczalik): skip itself
-func Update(b []Bin) {
+func Update(b []Bin, log func(*Bin, time.Duration, error)) {
 	type kv struct {
 		k string
 		v []string
@@ -202,18 +202,12 @@ func Update(b []Bin) {
 	var (
 		builds = make(map[string][]string, len(b))
 		mtx    sync.Mutex // protects b
-		seterr = func(err error, paths ...string) {
+		seterr = func(t time.Time, err error, paths ...string) {
 			mtx.Lock()
 			for _, path := range paths {
 				for i := range b {
 					if b[i].Path == path {
-						// TODO(rjeczalik): inject logger
-						if err != nil {
-							fmt.Printf("fail\t%s\t(%s)\n", b[i].Path, b[i].Package)
-							fmt.Printf("\terror: %v\n", err)
-						} else {
-							fmt.Printf("ok\t%s\t(%s)\n", b[i].Path, b[i].Package)
-						}
+						log(&b[i], time.Now().Sub(t), err)
 						b[i].err = err
 					}
 				}
@@ -246,18 +240,19 @@ func Update(b []Bin) {
 			for kv := range ch {
 				wrk, err := ioutil.TempDir("", "gobin")
 				if err != nil {
-					seterr(err, kv.v...)
+					seterr(time.Now(), err, kv.v...)
 					continue
 				}
 				var (
 					bin  = filepath.Join(wrk, "bin")
 					env  = environ(wrk, bin)
 					fail = func(err error, s ...string) {
-						seterr(err, s...)
+						seterr(time.Now(), err, s...)
 						os.RemoveAll(wrk)
 						wg.Done()
 					}
 				)
+				t := time.Now()
 				build := exec.Command("go", "get", kv.k)
 				build.Env = env
 				if p, err := build.CombinedOutput(); err != nil {
@@ -273,10 +268,10 @@ func Update(b []Bin) {
 				exe := filepath.Join(bin, filepath.Base(kv.v[0]))
 				for _, path := range kv.v {
 					if err = copyfile(path, exe); err != nil {
-						seterr(err, path)
+						seterr(time.Now(), err, path)
 					}
 				}
-				seterr(nil, kv.v...)
+				seterr(t, nil, kv.v...)
 				os.RemoveAll(wrk)
 				wg.Done()
 			}
