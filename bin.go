@@ -141,15 +141,19 @@ func CanWrite(path string) bool {
 	if err != nil {
 		return false
 	}
-	dir := filepath.Dir(path)
-	f, err := ioutil.TempFile(dir, filepath.Base(path))
+	dir := path
 	if !fi.IsDir() {
-		if err != nil {
-			return false
-		}
-		f.Close()
+		dir = filepath.Dir(path)
+	}
+	f, err := ioutil.TempFile(dir, filepath.Base(path))
+	if err != nil {
+		return false
+	}
+	f.Close()
+	if !fi.IsDir() {
 		err, _ = os.Rename(path, f.Name()), os.Rename(f.Name(), path)
 	}
+	os.Remove(f.Name())
 	return (err == nil)
 }
 
