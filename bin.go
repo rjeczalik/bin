@@ -119,7 +119,7 @@ func splitdirpkg(a []string) (dirs, pkgs []string) {
 	return
 }
 
-// Bin TODO(rjeczalik): document
+// Bin represents single Go executable.
 type Bin struct {
 	Path     string
 	Package  string
@@ -127,10 +127,12 @@ type Bin struct {
 	err      error
 }
 
-// Err TODO(rjeczalik): document
+// Err returns any error a Bin may hold. The error may be set by PATH lookup
+// routines or when guessing import path of the executable fails.
 func (b Bin) Err() error { return b.err }
 
-// BinSlice TODO(rjeczalik): document
+// BinSlice attaches the methods of Interface to []Bin, sorting in increasing
+// Bin.Path order.
 type BinSlice []Bin
 
 // Implements sort.Interface.
@@ -139,7 +141,8 @@ func (b BinSlice) Len() int           { return len(b) }
 func (b BinSlice) Less(i, j int) bool { return b[i].Path < b[j].Path }
 func (b BinSlice) Swap(i, j int)      { b[i], b[j] = b[j], b[i] }
 
-// CanWrite TODO(rjeczalik): document
+// CanWrite returns true if a directory or a file specified by the path can
+// be written.
 func CanWrite(path string) bool {
 	fi, err := os.Stat(path)
 	if err != nil {
@@ -161,12 +164,13 @@ func CanWrite(path string) bool {
 	return (err == nil)
 }
 
-// IsExecutable TODO(rjeczalik): document
+// IsExecutable returns true if a file under the given path looks like binary
+// file that has executable rights. It's right most of the time.
 func IsExecutable(path string) bool {
 	return isExecutable(path)
 }
 
-// IsBinary TODO(rjeczalik): document
+// IsBinary returns true if a file is binary.
 func IsBinary(path string) bool {
 	f, err := os.Open(path)
 	if err != nil {
@@ -182,18 +186,32 @@ func IsBinary(path string) bool {
 	return !strings.Contains(http.DetectContentType(p[:n]), "text/plain")
 }
 
-// Search TODO(rjeczalik): document
-func Search(args []string) ([]Bin, error) {
-	bin, _, err := searchSymlink(args, false)
+// Search looks for Go executables in all the directories specified by
+// the dirs slice. If dirs is nil or empty, executables are looked up
+// in directories specified by the $GOPATH, $GOBIN and $PATH environment
+// variables.
+// The lookup is performed on multiple goroutines. Setting GOMAXPROCS may speed
+// up this function.
+func Search(dirs []string) ([]Bin, error) {
+	bin, _, err := searchSymlink(dirs, false)
 	return bin, err
 }
 
-// SearchSymlink TODO(rjeczalik): document
-func SearchSymlink(args []string) ([]Bin, map[string][]Bin, error) {
-	return searchSymlink(args, true)
+// Search looks for Go executables in all the directories specified by
+// the dirs slice resolving any symlinks it discovers. If dirs is nil or empty,
+// executables are looked up in directories specified by the $GOPATH, $GOBIN
+// and $PATH environment variables.
+// The lookup is performed on multiple goroutines. Setting GOMAXPROCS may speed
+// up this function.
+// TODO: The symlink part is not implemented yet, map is always nil/empty.
+func SearchSymlink(dirs []string) ([]Bin, map[string][]Bin, error) {
+	return searchSymlink(dirs, true)
 }
 
-// Update TODO(rjeczalik): document
+// Update checks out repositories for each Go executable in b slice in a temporary
+// directory, builds new executable and replaces it with the old one.
+// The update is performed on multiple goroutines. Setting GOMAXPROCS may speed
+// up this function.
 func Update(b []Bin, log func(*Bin, time.Duration, error)) {
 	type kv struct {
 		k string
