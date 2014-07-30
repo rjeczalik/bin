@@ -24,6 +24,9 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
 
 	"github.com/rjeczalik/bin"
 )
@@ -67,6 +70,22 @@ func parse() []string {
 	return flag.Args()
 }
 
+func self() string {
+	if strings.Contains(os.Args[0], string(os.PathSeparator)) {
+		if self, err := filepath.Abs(os.Args[0]); err == nil {
+			if fiself, err := os.Stat(self); err == nil {
+				if fiargs, err := os.Stat(os.Args[0]); err == nil && os.SameFile(fiself, fiargs) {
+					return self
+				}
+			}
+		}
+	}
+	if self, err := exec.LookPath(filepath.Base(os.Args[0])); err == nil {
+		return self
+	}
+	return ""
+}
+
 // TODO(rjeczalik): Bin.CanWrite needs a Flock here
 func main() {
 	if len(os.Args) == 2 && ishelp(os.Args[1]) {
@@ -88,6 +107,14 @@ func main() {
 		die(e)
 	}
 	if update {
+		if self := self(); self != "" {
+			for i := range b {
+				if b[i].Path == self {
+					b[i], b = b[len(b)-1], b[:len(b)-1]
+					break
+				}
+			}
+		}
 		bin.Update(b)
 	} else {
 		for i := range b {
