@@ -39,17 +39,19 @@
 //               and lists or updates them.
 //
 //   USAGE:
-//       gobin [-u] [-v] [path|package...]
+//       gobin [-u] [path|package...]
 //
 //   FLAGS:
-//       -v  Turns on verbose output
 //       -u  Updates Go binaries
 //
 //   EXAMPLES:
 //       gobin                    Lists all Go binaries (looks up $PATH/$GOBIN/$GOPATH)
-//       gobin -v -u              Updates all Go binaries
+//       gobin -u                 Updates all Go binaries
 //       gobin -u github.com      Updates all Go binaries installed from github.com
 //       gobin ~/bin              Lists all Go binaries from the ~/bin directory
+//
+//   DANGEROUS EXAMPLES:
+//       gobin -u github.com/rjeczalik  Updates all Go binaries installed from github.com/rjeczalik
 package main
 
 import (
@@ -74,22 +76,18 @@ const usage = `NAME:
 	        and lists or updates them.
 
 USAGE:
-	gobin [-u] [-v] [path|package...]
+	gobin [-u] [path|package...]
 
 FLAGS:
-	-v  Turns on verbose output
-	-u  Updates Go binaries
+	-u    Updates Go binaries
 
 EXAMPLES:
 	gobin                    Lists all Go binaries (looks up $PATH/$GOBIN/$GOPATH)
-	gobin -v -u              Updates all Go binaries
+	gobin -u                 Updates all Go binaries
 	gobin -u github.com      Updates all Go binaries installed from github.com
 	gobin ~/bin              Lists all Go binaries from the ~/bin directory`
 
-var (
-	update  bool
-	verbose bool
-)
+var update bool
 
 func ishelp(s string) bool {
 	return s == "-h" || s == "-help" || s == "help" || s == "--help" || s == "/?"
@@ -98,7 +96,6 @@ func ishelp(s string) bool {
 func parse() []string {
 	flag.Usage = func() { die(usage) }
 	flag.BoolVar(&update, "u", false, "")
-	flag.BoolVar(&verbose, "v", false, "")
 	flag.Parse()
 	return flag.Args()
 }
@@ -134,16 +131,7 @@ func main() {
 		fmt.Println(usage)
 		return
 	}
-	var (
-		b []bin.Bin
-		e error
-		a = parse()
-	)
-	if verbose {
-		b, _, e = bin.SearchSymlink(a)
-	} else {
-		b, e = bin.Search(a)
-	}
+	var b, e = bin.Search(parse())
 	if e != nil {
 		die(e)
 	}
