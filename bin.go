@@ -256,7 +256,7 @@ func Update(b []Bin, log func(*Bin, time.Duration, error)) {
 	for i := min(parallel, len(builds)); i > 0; i-- {
 		go func() {
 			for kv := range ch {
-				wrk, err := "/tmp/gobin", (error)(nil)
+				wrk, err := ioutil.TempDir("", "gobin")
 				if err != nil {
 					seterr(time.Now(), err, kv.v...)
 					continue
@@ -290,6 +290,7 @@ func Update(b []Bin, log func(*Bin, time.Duration, error)) {
 					}
 				}
 				seterr(t, nil, kv.v...)
+				os.RemoveAll(wrk)
 				wg.Done()
 			}
 		}()
