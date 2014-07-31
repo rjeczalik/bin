@@ -19,25 +19,6 @@ Mainly searches for Go executables in `$PATH`, `$GOBIN`, `$GOPATH` and updates t
 
 *Usage*
 
-```bash
-~ $ GOPATH=~ go get github.com/rjeczalik/pkgconfig/cmd/pkg-config \
-                    github.com/rjeczalik/bindata/cmd/bindata      \
-                    github.com/rjeczalik/which/cmd/gowhich        \
-                    github.com/rjeczalik/tools/cmd/gotree
-```
-```bash
-~ $ GOPATH=~ gobin
-/home/rjeczalik/bin/bindata	(github.com/rjeczalik/bindata/cmd/bindata)
-/home/rjeczalik/bin/gotree	(github.com/rjeczalik/tools/cmd/gotree)
-/home/rjeczalik/bin/gowhich	(github.com/rjeczalik/which/cmd/gowhich)
-/home/rjeczalik/bin/pkg-config	(github.com/rjeczalik/pkgconfig/cmd/pkg-config)
-```
-```bash
-~ $ GOPATH=~ gobin -u
-ok	/home/rjeczalik/bin/gowhich	(github.com/rjeczalik/which/cmd/gowhich)	5.926s
-ok	/home/rjeczalik/bin/gotree	(github.com/rjeczalik/tools/cmd/gotree)	2.494s
-ok	/home/rjeczalik/bin/pkg-config	(github.com/rjeczalik/pkgconfig/cmd/pkg-config)	2.635s
-ok	/home/rjeczalik/bin/bindata	(github.com/rjeczalik/bindata/cmd/bindata)	3.474s
-```
+![gobin](https://i.imgur.com/AEimmsY.gif "gobin")
 
 **NOTE** Bumping GOMAXPROCS value up may speed up gobin significantly.
