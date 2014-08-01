@@ -1,4 +1,4 @@
-// Command gobin updates Go commands by reading their import paths, go-getting
+// Command gobin  Go commands by reading their import paths, go-getting
 // their repositories and building new executables.
 //
 // Command gobin can search for and list Go executables, create a $GOPATH workspace
@@ -10,6 +10,25 @@
 // Command gobin can guess an origin of the sources used to build Go executables
 // it finds on a system. It can be used to create precise mirror of the sources
 // for system Go executables, without any unneeded packages.
+//
+//   ~ $ gobin -s /tmp/gopath godoc golint goimports gotree gowhich
+//   code.google.com/p/go.tools (download)
+//   github.com/rjeczalik/tools (download)
+//   github.com/rjeczalik/which (download)
+//   (...)
+//   github.com/rjeczalik/which/cmd/gowhich
+//   code.google.com/p/go.tools/cmd/godoc
+//   ~ $ tree -L 3 /tmp/gopath/src/
+//   /tmp/gopath/src/
+//   ├── code.google.com
+//   │   └── p
+//   │       └── go.tools
+//   └── github.com
+//       └── rjeczalik
+//           ├── tools
+//           └── which
+//
+//   7 directories, 0 files
 //
 // Update
 //
@@ -35,7 +54,7 @@
 // Usage
 //
 //   NAME:
-//       gobin - performs discovery of Go executables ($PATH/$GOBIN/$GOPATH),
+//       gobin - looks for Go executables system-wide ($PATH/$GOBIN/$GOPATH),
 //               lists them, fetches their sources and updates them
 //
 //   USAGE:
