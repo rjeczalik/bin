@@ -94,11 +94,13 @@ func searchpaths() (s []string) {
 	return
 }
 
-func splitdirpkg(a []string) (dirs, pkgs []string) {
+func splitdirpkgexe(a []string) (dirs, pkgs, exes []string) {
 	var (
 		appenddirs = appenduniq(&dirs)
 		appendpkgs = appenduniq(&pkgs)
+		appendexes = appenduniq(&exes)
 	)
+LOOP:
 	for _, a := range a {
 		switch {
 		case a == ".":
@@ -106,12 +108,20 @@ func splitdirpkg(a []string) (dirs, pkgs []string) {
 				appenddirs(wd)
 			}
 		default:
-			if fi, err := os.Stat(a); err == nil {
-				if !fi.IsDir() {
-					a = filepath.Dir(a)
+			if strings.Contains(a, string(os.PathSeparator)) {
+				if fi, err := os.Stat(a); err == nil {
+					if !fi.IsDir() {
+						a = filepath.Dir(a)
+					}
+					appenddirs(a)
+					continue LOOP
 				}
-				appenddirs(a)
-			} else if os.IsNotExist(err) {
+			}
+			if IsExecutable(a) || !strings.Contains(a, ".") {
+				if path, err := exec.LookPath(a); err == nil {
+					appendexes(path)
+				}
+			} else {
 				appendpkgs(a)
 			}
 		}
@@ -216,7 +226,6 @@ func Source(b []Bin, gopath string) error {
 	}
 	cmd.Env = environ(gopath, filepath.Join(gopath, "bin"))
 	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
-	fmt.Println(cmd.Args)
 	return cmd.Run()
 }
 
@@ -364,12 +373,11 @@ func searchSymlink(args []string, symlink bool) (b []Bin, s map[string][]Bin, er
 		sch chan skv
 		bs  map[string]Bin
 	)
-	dirs, pkgs := splitdirpkg(args)
-	if dirs == nil || len(dirs) == 0 {
-		dirs = searchpaths()
-	}
-	if dirs == nil || len(dirs) == 0 {
-		return nil, nil, errors.New("bin: couldn't find any search paths")
+	dirs, pkgs, exes := splitdirpkgexe(args)
+	if len(pkgs) == 0 && len(exes) == 0 && len(dirs) == 0 {
+		if dirs = searchpaths(); len(dirs) == 0 {
+			return nil, nil, errors.New("bin: couldn't find any search paths")
+		}
 	}
 	if symlink {
 		s, sch, bs = make(map[string][]Bin), make(chan skv), make(map[string]Bin)
@@ -385,7 +393,11 @@ func searchSymlink(args []string, symlink bool) (b []Bin, s map[string][]Bin, er
 		}()
 	}
 	// TODO(rjeczalik): cap(ch) = max(count files in dirs)
-	ch, wg := make(chan binpath, 128), sync.WaitGroup{}
+	ch, wg := make(chan binpath, max(len(exes), 128)), sync.WaitGroup{}
+	for _, exe := range exes {
+		wg.Add(1)
+		ch <- binpath{path: exe, canwrite: CanWrite(exe)}
+	}
 	for i := 0; i < parallel; i++ {
 		go func() {
 			for p := range ch {
