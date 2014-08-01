@@ -1,6 +1,18 @@
 // Command gobin updates Go commands by reading their import paths, go-getting
 // their repositories and building new executables.
 //
+// Command gobin can search for and list Go executables, create a $GOPATH workspace
+// out of a binary. It can also update an executable which does not have its
+// sources fetched in current $GOPATH.
+//
+// Source
+//
+// Command gobin can guess an origin of the sources used to build Go executables
+// it finds on a system. It can be used to create precise mirror of the sources
+// for system Go executables, without any unneeded packages.
+//
+// Update
+//
 // Command gobin can update single executable or automagically discover all of
 // them in directories specified in $GOPATH, $GOBIN and $GOPATH environment
 // variables.
@@ -12,21 +24,9 @@
 // up $GOMAXPROCS environment variable may speed up the overall run-time
 // significantly.
 //
-// Example output
+// Example
 //
 //   ~ $ GOMAXPROCS=2 gobin -u
-//   ok 	/home/rjeczalik/bin/gowhich	(github.com/rjeczalik/which/cmd/gowhich)	3.470s
-//   ok 	/home/rjeczalik/bin/circuit	(github.com/gocircuit/circuit/cmd/circuit)	4.980s
-//   ok 	/home/rjeczalik/bin/gobin	(github.com/rjeczalik/bin/cmd/gobin)	6.108s
-//   ok 	/home/rjeczalik/workspace/bin/gobin	(github.com/rjeczalik/bin/cmd/gobin)	6.108s
-//   ok 	/home/rjeczalik/bin/gotree	(github.com/rjeczalik/tools/cmd/gotree)	2.458s
-//   ok 	/home/rjeczalik/bin/ciexec	(github.com/rjeczalik/ciexec/cmd/ciexec)	10.918s
-//   ok 	/home/rjeczalik/bin/pkg-config	(github.com/rjeczalik/pkgconfig/cmd/pkg-config)	2.518s
-//   ok 	/home/rjeczalik/bin/bindata	(github.com/rjeczalik/bindata/cmd/bindata)	3.584s
-//   ok 	/home/rjeczalik/bin/fakerpc	(github.com/rjeczalik/fakerpc/cmd/fakerpc)	5.498s
-//   ok 	/home/rjeczalik/workspace/bin/fakerpc	(github.com/rjeczalik/fakerpc/cmd/fakerpc)	5.499s
-//   ok 	/home/rjeczalik/bin/golint	(github.com/golang/lint/golint)	2.973s
-//   ok 	/home/rjeczalik/bin/ungocheck	(github.com/rjeczalik/ungocheck/cmd/ungocheck)	2.308s
 //   ok 	/home/rjeczalik/bin/goimports	(code.google.com/p/go.tools/cmd/goimports)	13.966s
 //   ok 	/home/rjeczalik/bin/godoc	(code.google.com/p/go.tools/cmd/godoc)	17.960s
 //   ok 	/home/rjeczalik/bin/pulsecli	(github.com/x-formation/pulsekit/cmd/pulsecli)	13.052s
@@ -35,23 +35,26 @@
 // Usage
 //
 //   NAME:
-//       gobin - searches for Go executables in $PATH/$GOBIN/$GOPATH
-//               and lists or updates them.
+//       gobin - performs discovery of Go executables ($PATH/$GOBIN/$GOPATH),
+//               lists them, fetches their sources and updates them
 //
 //   USAGE:
-//       gobin [-u] [path|package...]
+//       gobin [-u] [-s=.|gopath] [path|package...]
 //
 //   FLAGS:
-//       -u  Updates Go binaries
+//       -u        Updates Go binaries
+//       -s <dir>  Go-gets sources for Go specified binaries into <dir> $GOPATH
+//                 (use '.' for current $GOPATH)
 //
 //   EXAMPLES:
 //       gobin                    Lists all Go binaries (looks up $PATH/$GOBIN/$GOPATH)
+//       gobin -s=. ~/bin         Go-gets sources used to build all Go binaries in ~/bin
+//                                into current $GOPATH
+//       gobin -s=/var/mirror     Go-gets all sources used to build all Go binaries found
+//                                on system into new /var/mirror $GOPATH
 //       gobin -u                 Updates all Go binaries
 //       gobin -u github.com      Updates all Go binaries installed from github.com
 //       gobin ~/bin              Lists all Go binaries from the ~/bin directory
-//
-//   DANGEROUS EXAMPLES:
-//       gobin -u github.com/rjeczalik  Updates all Go binaries installed from github.com/rjeczalik
 package main
 
 import (
@@ -72,22 +75,31 @@ func die(v interface{}) {
 }
 
 const usage = `NAME:
-	gobin - searches for Go executables in $PATH/$GOBIN/$GOPATH
-	        and lists or updates them.
+	gobin - performs discovery of Go executables ($PATH/$GOBIN/$GOPATH),
+	        lists them, fetches their sources and updates them
 
 USAGE:
-	gobin [-u] [path|package...]
+	gobin [-u] [-s=.|gopath] [path|package...]
 
 FLAGS:
-	-u    Updates Go binaries
+	-u        Updates Go binaries
+	-s <dir>  Go-gets sources for Go specified binaries into <dir> $GOPATH
+	          (use '.' for current $GOPATH)
 
 EXAMPLES:
 	gobin                    Lists all Go binaries (looks up $PATH/$GOBIN/$GOPATH)
-	gobin -u                 Updates all Go binaries
+	gobin -s=. ~/bin         Go-gets sources used to build all Go binaries in ~/bin
+	                         into current $GOPATH
+	gobin -s=/var/mirror     Go-gets all sources used to build all Go binaries found
+	                         on system into new /var/mirror $GOPATH
+	gobin -u                 Updates all Go binaries in-place
 	gobin -u github.com      Updates all Go binaries installed from github.com
 	gobin ~/bin              Lists all Go binaries from the ~/bin directory`
 
-var update bool
+var (
+	source string
+	update bool
+)
 
 func ishelp(s string) bool {
 	return s == "-h" || s == "-help" || s == "help" || s == "--help" || s == "/?"
@@ -95,6 +107,7 @@ func ishelp(s string) bool {
 
 func parse() []string {
 	flag.Usage = func() { die(usage) }
+	flag.StringVar(&source, "s", "", "")
 	flag.BoolVar(&update, "u", false, "")
 	flag.Parse()
 	return flag.Args()
@@ -135,7 +148,8 @@ func main() {
 	if e != nil {
 		die(e)
 	}
-	if update {
+	switch {
+	case update:
 		if self := self(); self != "" {
 			for i := range b {
 				if b[i].Path == self {
@@ -145,7 +159,20 @@ func main() {
 			}
 		}
 		bin.Update(b, log)
-	} else {
+	case source != "":
+		if source == "." {
+			source = os.Getenv("GOPATH")
+			if source == "" {
+				die("bin: unable to read current $GOPATH or $GOPATH is empty")
+			}
+			if i := strings.Index(source, string(os.PathListSeparator)); i != -1 {
+				source = source[:i]
+			}
+		}
+		if bin.Source(b, source) != nil {
+			os.Exit(1)
+		}
+	default:
 		for i := range b {
 			fmt.Printf("%s\t(%s)\n", b[i].Path, b[i].Package)
 		}

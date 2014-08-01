@@ -208,6 +208,18 @@ func SearchSymlink(dirs []string) ([]Bin, map[string][]Bin, error) {
 	return searchSymlink(dirs, true)
 }
 
+// Source go-gets packages used to build `b` binaries into `gopath` $GOPATH.
+func Source(b []Bin, gopath string) error {
+	cmd := exec.Command("go", "get", "-v", "-t")
+	for i := range b {
+		cmd.Args = append(cmd.Args, b[i].Package)
+	}
+	cmd.Env = environ(gopath, filepath.Join(gopath, "bin"))
+	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
+	fmt.Println(cmd.Args)
+	return cmd.Run()
+}
+
 // Update checks out repositories for each Go executable in b slice in a temporary
 // directory, builds new executable and replaces it with the old one.
 // The update is performed on multiple goroutines. Setting GOMAXPROCS may speed
