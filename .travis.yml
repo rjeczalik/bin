@@ -1,14 +1,20 @@
-language: go
-
-go:
- - 1.3
+language: objective-c
 
 install:
+ - bash < <(curl -s -S -L https://raw.githubusercontent.com/moovweb/gvm/master/binscripts/gvm-installer)
+ - source $HOME/.gvm/scripts/gvm
+ - gvm install go1.3 --binary || gvm install go1.3
+ - gvm use go1.3
+ - export GOPATH=~
  - export GOBIN=$HOME/bin
  - export PATH=$GOBIN:$PATH
+ - mkdir -p ~/src/github.com
+ - mv ../../rjeczalik ~/src/github.com
+ - cd ~/src/github.com/rjeczalik/bin
+ - go version
  - go get code.google.com/p/go.tools/cmd/vet
  - go get -t -v ./...
- - go  install -a -race std
+ - go install -a -race std
 
 script:
  - go tool vet -all .
@@ -19,4 +25,3 @@ script:
  - go get github.com/rjeczalik/tools/cmd/gotree
  - go get github.com/rjeczalik/bindata/cmd/bindata
  - GOMAXPROCS=4 gobin -u
-
