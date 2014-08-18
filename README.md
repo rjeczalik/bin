@@ -1,4 +1,4 @@
-bin [![GoDoc](https://godoc.org/github.com/rjeczalik/bin?status.svg)](https://godoc.org/github.com/rjeczalik/bin) [![Build Status](https://travis-ci.org/rjeczalik/bin.png?branch=master)](https://travis-ci.org/rjeczalik/bin "linux_amd64") [![Build Status](https://travis-ci.org/rjeczalik/bin.png?branch=osx)](https://travis-ci.org/rjeczalik/bin "darwin_amd64") [![Build status](https://ci.appveyor.com/api/projects/status/sl6pjb76vk3uw4s2)](https://ci.appveyor.com/project/rjeczalik/bin "windows_amd64")
+bin [![GoDoc](https://godoc.org/github.com/rjeczalik/bin?status.svg)](https://godoc.org/github.com/rjeczalik/bin) [![Build Status](https://img.shields.io/travis/rjeczalik/bin/master.svg)](https://travis-ci.org/rjeczalik/bin "linux_amd64") [![Build Status](https://img.shields.io/travis/rjeczalik/bin/osx.svg)](https://travis-ci.org/rjeczalik/bin "darwin_amd64") [![Build status](https://img.shields.io/appveyor/ci/rjeczalik/bin.svg)](https://ci.appveyor.com/project/rjeczalik/bin "windows_amd64")
 =========
 
 Package `bin` looks for Go executable system-wide (`$PATH`, `$GOBIN`, `$GOPATH`), lists them, reads their import paths, fetches their sources and updates them.
