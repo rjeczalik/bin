@@ -379,6 +379,7 @@ func searchSymlink(args []string, symlink bool) (b []Bin, s map[string][]Bin, er
 			return nil, nil, errors.New("bin: couldn't find any search paths")
 		}
 	}
+	fmt.Printf("dirs=%v, pkgs=%v, exes=%v\n", dirs, pkgs, exes)
 	if symlink {
 		s, sch, bs = make(map[string][]Bin), make(chan skv), make(map[string]Bin)
 		defer close(sch)
@@ -402,6 +403,7 @@ func searchSymlink(args []string, symlink bool) (b []Bin, s map[string][]Bin, er
 		go func() {
 			for p := range ch {
 				pkg, err := importpkg(p.path)
+				fmt.Printf("import %s: pkg=%s, err=%v\n", p.path, pkg, err)
 				if err != nil {
 					wg.Done()
 					continue
@@ -427,9 +429,16 @@ func searchSymlink(args []string, symlink bool) (b []Bin, s map[string][]Bin, er
 		canwrite := CanWrite(dir)
 		for _, fi := range files {
 			path := filepath.Join(dir, fi.Name())
-			if !fi.IsDir() && fi.Mode().IsRegular() && IsExecutable(path) && IsBinary(path) {
-				wg.Add(1)
-				ch <- binpath{path: path, canwrite: canwrite}
+
+			if !fi.IsDir() {
+				isreg := fi.Mode().IsRegular()
+				isexec := IsExecutable(path)
+				isbin := IsBinary(path)
+				fmt.Printf("path=%v, isreg=%v, isexec=%v, isbin=%v\n", path, isreg, isexec, isbin)
+				if isreg && isexec && isbin {
+					wg.Add(1)
+					ch <- binpath{path: path, canwrite: canwrite}
+				}
 			}
 		}
 		fi.Close()
