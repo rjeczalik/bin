@@ -233,7 +233,7 @@ func Source(b []Bin, gopath string) error {
 // directory, builds new executable and replaces it with the old one.
 // The update is performed on multiple goroutines. Setting GOMAXPROCS may speed
 // up this function.
-func Update(b []Bin, log func(*Bin, time.Duration, error)) {
+func Update(b []Bin, log func(*Bin, time.Duration, error), installFlags ...string) {
 	type kv struct {
 		k string
 		v []string
@@ -298,7 +298,12 @@ func Update(b []Bin, log func(*Bin, time.Duration, error)) {
 					fail(fmterr(err, p), kv.v...)
 					continue
 				}
-				install := exec.Command("go", "install", kv.k)
+				args := append(append(append(
+					make([]string, 0, 2+len(installFlags)),
+					"install"),
+					installFlags...),
+					kv.k)
+				install := exec.Command("go", args...)
 				install.Env = env
 				if p, err := install.CombinedOutput(); err != nil {
 					fail(fmterr(err, p), kv.v...)
