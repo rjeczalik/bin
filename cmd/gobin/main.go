@@ -20,13 +20,13 @@
 //   code.google.com/p/go.tools/cmd/godoc
 //   ~ $ tree -L 3 /tmp/gopath/src/
 //   /tmp/gopath/src/
-//   âââ code.google.com
-//   âÂ Â  âââ p
-//   âÂ Â      âââ go.tools
-//   âââ github.com
-//       âââ rjeczalik
-//           âââ tools
-//           âââ which
+//   ├── code.google.com
+//   │   └── p
+//   │       └── go.tools
+//   └── github.com
+//       └── rjeczalik
+//           ├── tools
+//           └── which
 //
 //   7 directories, 0 files
 //
