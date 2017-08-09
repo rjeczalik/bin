@@ -185,7 +185,7 @@ func main() {
 		if ldflags != "" {
 			installFlags = append(installFlags, "-ldflags="+ldflags)
 		}
-		bin.Update(b, log, installFlags...)
+		bin.Update(bin.UpdateOpts{Bins: b, Log: log, Flags: installFlags})
 	case source != "":
 		if source == "." {
 			source = os.Getenv("GOPATH")

@@ -229,34 +229,42 @@ func Source(b []Bin, gopath string) error {
 	return cmd.Run()
 }
 
+// UpdateOpts holds the options for Update.
+type UpdateOpts struct {
+	Bins  []Bin
+	Log   func(*Bin, time.Duration, error)
+	Flags []string
+}
+
 // Update checks out repositories for each Go executable in b slice in a temporary
 // directory, builds new executable and replaces it with the old one.
 // The update is performed on multiple goroutines. Setting GOMAXPROCS may speed
 // up this function.
-func Update(b []Bin, log func(*Bin, time.Duration, error), installFlags ...string) {
+func Update(opts UpdateOpts) {
 	type kv struct {
 		k string
 		v []string
 	}
-	var (
-		builds = make(map[string][]string, len(b))
-		mtx    sync.Mutex // protects b
-		seterr = func(t time.Time, err error, paths ...string) {
-			mtx.Lock()
-			for _, path := range paths {
-				for i := range b {
-					if b[i].Path == path {
-						log(&b[i], time.Now().Sub(t), err)
-						b[i].err = err
-					}
+	var mtx sync.Mutex // protects b
+	b := opts.Bins
+
+	builds := make(map[string][]string, len(b))
+	seterr := func(t time.Time, err error, paths ...string) {
+		mtx.Lock()
+		for _, path := range paths {
+			for i := range b {
+				if b[i].Path == path {
+					opts.Log(&b[i], time.Now().Sub(t), err)
+					b[i].err = err
 				}
 			}
-			mtx.Unlock()
 		}
-		fmterr = func(err error, p []byte) error {
-			return fmt.Errorf("%v\n\t%s", err, bytes.Replace(p, []byte{'\n'}, []byte("\n\t"), -1))
-		}
-	)
+		mtx.Unlock()
+	}
+	fmterr := func(err error, p []byte) error {
+		return fmt.Errorf("%v\n\t%s", err, bytes.Replace(p, []byte{'\n'}, []byte("\n\t"), -1))
+	}
+
 	for i := range b {
 		if b[i].CanWrite {
 			if v, ok := builds[b[i].Package]; ok {
@@ -299,9 +307,9 @@ func Update(b []Bin, log func(*Bin, time.Duration, error), installFlags ...strin
 					continue
 				}
 				args := append(append(append(
-					make([]string, 0, 2+len(installFlags)),
+					make([]string, 0, 2+len(opts.Flags)),
 					"install"),
-					installFlags...),
+					opts.Flags...),
 					kv.k)
 				install := exec.Command("go", args...)
 				install.Env = env
