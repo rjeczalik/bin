@@ -61,9 +61,10 @@
 //       gobin [-u] [-s=.|gopath] [path|package...]
 //
 //   FLAGS:
-//       -u        Updates Go binaries
-//       -s <dir>  Go-gets sources for Go specified binaries into <dir> $GOPATH
-//                 (use '.' for current $GOPATH)
+//       -u                Updates Go binaries
+//       -s <dir>          Go-gets sources for Go specified binaries into <dir> $GOPATH
+//                         (use '.' for current $GOPATH)
+//       -ldflags=<flags>  passes "-ldflags=flags" to "go install"
 //
 //   EXAMPLES:
 //       gobin                    Lists all Go binaries (looks up $PATH/$GOBIN/$GOPATH)
@@ -101,9 +102,10 @@ USAGE:
 	gobin [-u] [-s=.|gopath] [path|package...]
 
 FLAGS:
-	-u        Updates Go binaries
-	-s <dir>  Go-gets sources for Go specified binaries into <dir> $GOPATH
-	          (use '.' for current $GOPATH)
+	-u                Updates Go binaries
+	-s <dir>          Go-gets sources for Go specified binaries into <dir> $GOPATH
+	                  (use '.' for current $GOPATH)
+	-ldflags=<flags>  passes "-ldflags=flags" to "go install"
 
 EXAMPLES:
 	gobin                    Lists all Go binaries (looks up $PATH/$GOBIN/$GOPATH)
@@ -113,11 +115,12 @@ EXAMPLES:
 	                         on system into new /var/mirror $GOPATH
 	gobin -u                 Updates all Go binaries in-place
 	gobin -u github.com      Updates all Go binaries installed from github.com
-	gobin ~/bin              Lists all Go binaries from the ~/bin directory`
+	gobin ~/bin              Lists all Go binaries from the ~/bin directory
+	gobin -u -ldflags='-w -s'	Updates all go binaries in-place, using "go install -ldflags='-w -s'"`
 
 var (
-	source string
-	update bool
+	source, ldflags string
+	update          bool
 )
 
 func ishelp(s string) bool {
@@ -128,6 +131,7 @@ func parse() []string {
 	flag.Usage = func() { die(usage) }
 	flag.StringVar(&source, "s", "", "")
 	flag.BoolVar(&update, "u", false, "")
+	flag.StringVar(&ldflags, "ldflags", "", "")
 	flag.Parse()
 	return flag.Args()
 }
@@ -167,6 +171,7 @@ func main() {
 	if e != nil {
 		die(e)
 	}
+	var installFlags []string
 	switch {
 	case update:
 		if self := self(); self != "" {
@@ -177,7 +182,10 @@ func main() {
 				}
 			}
 		}
-		bin.Update(b, log)
+		if ldflags != "" {
+			installFlags = append(installFlags, "-ldflags="+ldflags)
+		}
+		bin.Update(bin.UpdateOpts{Bins: b, Log: log, Flags: installFlags})
 	case source != "":
 		if source == "." {
 			source = os.Getenv("GOPATH")
