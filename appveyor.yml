@@ -7,24 +7,19 @@ clone_folder: c:\projects\src\github.com\rjeczalik\bin
 environment:
  GOPATH: c:\projects
  GOBIN: c:\projects\bin
- GOMAXPROCS: 2
 
 install:
- - set PATH=%GOBIN%;%PATH%
- - cd %APPVEYOR_BUILD_FOLDER%
- - go version
- - go get code.google.com/p/go.tools/cmd/vet
- - go get -v -t ./...
+  - set PATH=%GOBIN%;%PATH%
+  - cd %APPVEYOR_BUILD_FOLDER%
+  - go version
+  - go get -v -t ./...
 
 build_script:
- - go tool vet -all .
- - go build ./...
- - go test -race -v ./...
- - go get github.com/rjeczalik/bin/cmd/gobin
- - go get github.com/rjeczalik/which/cmd/gowhich github.com/rjeczalik/which/cmd/gofile
- - go get github.com/rjeczalik/tools/cmd/gotree
- - go get github.com/rjeczalik/bindata/cmd/bindata
- - gobin -u
+  - go tool vet -all .
+  - go build ./...
+  - go test -race -v ./...
+  - go get github.com/rjeczalik/bin/cmd/... github.com/rjeczalik/which/cmd/... github.com/rjeczalik/tools/cmd/... github.com/rjeczalik/bindata/cmd/bindata
+  - gobin -u
 
 test: off
 

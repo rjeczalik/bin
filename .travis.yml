@@ -12,19 +12,13 @@ env:
     - PATH=$HOME/gopath/bin:$PATH
 
 install:
- - export GOBIN=$HOME/bin
- - export PATH=$GOBIN:$PATH
- - go get code.google.com/p/go.tools/cmd/vet
- - go get -t -v ./...
- - go  install -a -race std
+  - export GOBIN=$HOME/bin PATH=$GOBIN:$PATH
+  - go version
+  - go get -t -v ./...
 
 script:
- - go tool vet -all .
- - go build ./...
- - go test -race -v ./...
- - go get github.com/rjeczalik/bin/cmd/gobin
- - go get github.com/rjeczalik/which/cmd/gowhich github.com/rjeczalik/which/cmd/gofile
- - go get github.com/rjeczalik/tools/cmd/gotree
- - go get github.com/rjeczalik/bindata/cmd/bindata
- - GOMAXPROCS=4 gobin -u
-
+  - go tool vet -all .
+  - go build ./...
+  - go test -race -v ./...
+  - go get github.com/rjeczalik/bin/cmd/... github.com/rjeczalik/which/cmd/... github.com/rjeczalik/tools/cmd/... github.com/rjeczalik/bindata/cmd/bindata
+  - gobin -u
