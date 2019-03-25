@@ -9,13 +9,18 @@ environment:
  GOBIN: c:\projects\bin
 
 install:
-  - set PATH=%GOBIN%;%PATH%
+  - rmdir c:\go /s /q
+  - appveyor DownloadFile https://dl.google.com/go/go1.12.1.windows-amd64.zip
+  - 7z x go1.12.1.windows-amd64.zip -y -oC:\ > NUL
+  - set PATH=%GOPATH%\bin;%PATH%
+  - go version
+  - set PATH=C:\msys64\mingw64\bin;%PATH%
   - cd %APPVEYOR_BUILD_FOLDER%
   - go version
   - go get -v -t ./...
 
 build_script:
-  - go tool vet -all .
+  - go vet -all .
   - go build ./...
   - go test -race -v ./...
   - go get github.com/rjeczalik/bin/cmd/... github.com/rjeczalik/which/cmd/... github.com/rjeczalik/tools/cmd/... github.com/rjeczalik/bindata/cmd/bindata
