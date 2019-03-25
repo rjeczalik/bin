@@ -1,7 +1,7 @@
 language: go
 
 go:
- - 1.x
+ - 1.11.x
  - tip
 
 matrix:
@@ -17,7 +17,7 @@ install:
   - go get -t -v ./...
 
 script:
-  - go tool vet -all .
+  - go vet -all .
   - go build ./...
   - go test -race -v ./...
   - go get github.com/rjeczalik/bin/cmd/... github.com/rjeczalik/which/cmd/... github.com/rjeczalik/tools/cmd/... github.com/rjeczalik/bindata/cmd/bindata
